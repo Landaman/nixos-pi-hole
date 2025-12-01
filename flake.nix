@@ -10,12 +10,15 @@
       ...
     }:
     let
+      secrets = builtins.fromJSON (builtins.readFile ./secrets.json);
+
       # Helper to make multiple pi systems with the same config
       mkPiHole =
         specialArgs:
         nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
           specialArgs = specialArgs // {
+            inherit secrets;
             hardware = nixos-hardware;
           };
           modules = [
@@ -27,11 +30,10 @@
     in
     {
       nixosConfigurations = {
-        cross = mkPiHole {
-          imageName = "cross";
-          systemName = "cross";
-          network = {
-          };
+        nine-cross = mkPiHole rec {
+          systemName = "nine-cross";
+          imageName = systemName;
+          tailscale-tag = systemName;
         };
       };
     };
