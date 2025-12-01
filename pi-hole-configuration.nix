@@ -63,7 +63,7 @@ in
     ];
     extraSetFlags = [
       "--advertise-exit-node"
-      "--advertise-routes=${systemSecrets.network.defaultGateway}/${builtins.toString systemSecrets.network.ipPrefixLength}"
+      "--advertise-routes=${lib.concatStringsSep "," systemSecrets.network.accessibleSubnets}"
     ];
   };
 
