@@ -33,7 +33,7 @@
         nine-cross = mkPiHole rec {
           systemName = "nine-cross";
           imageName = systemName;
-          tailscale-tag = systemName;
+          tailscaleLocationTag = systemName;
         };
       };
     };

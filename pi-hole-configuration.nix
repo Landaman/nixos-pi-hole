@@ -3,6 +3,7 @@
   lib,
   systemName,
   secrets,
+  tailscaleLocationTag,
   ...
 }:
 let
@@ -32,6 +33,7 @@ in
     hostName = "${systemName}-pi-hole";
 
     defaultGateway = systemSecrets.network.defaultGateway;
+    nameservers = [ systemSecrets.network.defaultGateway ];
     interfaces."wlan0".ipv4.addresses = [
       {
         address = systemSecrets.network.ipAddress;
@@ -48,6 +50,22 @@ in
   };
 
   services.timesyncd.enable = true;
+
+  environment.etc."tailscale-auth-key".text = secrets.tailscale.authKey;
+
+  services.tailscale = {
+    enable = true;
+    openFirewall = true;
+    authKeyFile = "/etc/tailscale-auth-key";
+    useRoutingFeatures = "server";
+    extraUpFlags = [
+      "--advertise-tags=tag:${tailscaleLocationTag}"
+    ];
+    extraSetFlags = [
+      "--advertise-exit-node"
+      "--advertise-routes=${systemSecrets.network.defaultGateway}/${builtins.toString systemSecrets.network.ipPrefixLength}"
+    ];
+  };
 
   nix.settings = {
     experimental-features = lib.mkDefault "nix-command flakes";
