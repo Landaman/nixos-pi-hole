@@ -1,13 +1,13 @@
 {
   pkgs,
   lib,
-  systemName,
+  systemNamePrefix,
   secrets,
   tailscaleLocationTag,
   ...
 }:
 let
-  systemSecrets = secrets."${systemName}";
+  systemSecrets = secrets."${systemNamePrefix}";
 in
 {
   system.stateVersion = "26.05";
@@ -30,7 +30,7 @@ in
   };
 
   networking = {
-    hostName = "${systemName}-pi-hole";
+    hostName = "${systemNamePrefix}-pi-hole";
 
     defaultGateway = systemSecrets.network.defaultGateway;
     nameservers = [ systemSecrets.network.defaultGateway ];
@@ -65,6 +65,70 @@ in
       "--advertise-exit-node"
       "--advertise-routes=${lib.concatStringsSep "," systemSecrets.network.accessibleSubnets}"
     ];
+  };
+
+  services.pihole-ftl = {
+    enable = true;
+    openFirewallDNS = true;
+    openFirewallWebserver = true;
+    queryLogDeleter.enable = true;
+    lists = [
+      {
+        enabled = true;
+        url = "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.plus.txt";
+        type = "block";
+        description = "Hagezi Mutli PRO++";
+      }
+    ];
+
+    settings = {
+      dns = {
+        listeningMode = "ALL";
+        upstreams = [
+          "9.9.9.9"
+          "149.112.112.112"
+          "2620:fe::fe"
+          "2620:fe::9"
+          systemSecrets.network.defaultGateway
+        ];
+      };
+    };
+  };
+
+  services.pihole-web = {
+    enable = true;
+    ports = [
+      {
+        port = 443;
+        ssl = true;
+      }
+    ];
+  };
+
+  # One-shot task to make sure we're serving the Pi-Hole web UI over Tailscale
+  systemd.services.pi-hole-tailscale-serve = {
+    description = "Serve the Pi-Hole web UI over Tailscale";
+
+    after = [
+      "tailscaled-autoconnect.service"
+      "pihole-ftl.service"
+    ];
+    wants = [
+      "tailscaled-autoconnect.service"
+      "pihole-ftl.service"
+    ];
+    wantedBy = [ "multi-user.target" ];
+
+    serviceConfig.Type = "oneshot";
+    script = with pkgs; ''
+      status="$(${tailscale}/bin/tailscale serve status --json | ${jq}/bin/jq -r 'getpath(["TCP","443","HTTPS"]) // empty')"
+       if [ $status = "True" ]; then
+         echo "Pi-Hole web UI is already being served over Tailscale"
+         exit 0
+       fi
+
+       ${tailscale}/bin/tailscale serve --bg https+insecure://localhost:443
+    '';
   };
 
   nix.settings = {
