@@ -1,13 +1,12 @@
 {
   pkgs,
   lib,
-  systemNamePrefix,
+  systemName,
   secrets,
-  tailscaleLocationTag,
   ...
 }:
 let
-  systemSecrets = secrets."${systemNamePrefix}";
+  systemSecrets = secrets."${systemName}";
 in
 {
   system.stateVersion = "26.05";
@@ -30,7 +29,7 @@ in
   };
 
   networking = {
-    hostName = "${systemNamePrefix}-pi-hole";
+    hostName = "${systemName}";
 
     defaultGateway = systemSecrets.network.defaultGateway;
     nameservers = [ systemSecrets.network.defaultGateway ];
@@ -59,11 +58,11 @@ in
     authKeyFile = "/etc/tailscale-auth-key";
     useRoutingFeatures = "server";
     extraUpFlags = [
-      "--advertise-tags=tag:${tailscaleLocationTag}"
+      "--advertise-tags=tag:${systemSecrets.tailscale.locationTag}"
     ];
     extraSetFlags = [
       "--advertise-exit-node"
-      "--advertise-routes=${lib.concatStringsSep "," systemSecrets.network.accessibleSubnets}"
+      "--advertise-routes=${lib.concatStringsSep "," systemSecrets.tailscale.accessibleSubnets}"
     ];
   };
 
