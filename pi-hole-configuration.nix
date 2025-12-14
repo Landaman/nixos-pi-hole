@@ -112,14 +112,19 @@ in
     wantedBy = [ "multi-user.target" ];
 
     serviceConfig.Type = "oneshot";
-    script = with pkgs; ''
-      status="$(${tailscale}/bin/tailscale serve status --json | ${jq}/bin/jq -r 'getpath(["TCP","443","HTTPS"]) // empty')"
+
+    path = with pkgs; [
+      tailscale
+      jq
+    ];
+    script = ''
+      status="$(tailscale serve status --json | jq -r 'getpath(["TCP","443","HTTPS"]) // empty')"
        if [ $status = "True" ]; then
          echo "Pi-Hole web UI is already being served over Tailscale"
          exit 0
        fi
 
-       ${tailscale}/bin/tailscale serve --bg https+insecure://localhost:443
+       tailscale serve --bg https+insecure://localhost:443
     '';
   };
 
