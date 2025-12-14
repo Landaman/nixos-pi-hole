@@ -9,13 +9,6 @@ let
   systemSecrets = secrets."${systemName}";
 in
 {
-  system.stateVersion = "26.05";
-
-  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_latest;
-  environment.systemPackages = with pkgs; [
-    git
-  ];
-
   services.openssh.enable = true; # Enable this otherwise you can't sign in right away
   users = {
     mutableUsers = false;

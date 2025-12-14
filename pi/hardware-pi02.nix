@@ -1,6 +1,5 @@
 {
   pkgs,
-  imageName,
   modulesPath,
   hardware,
   ...
@@ -13,13 +12,14 @@
   ];
 
   nixpkgs.hostPlatform = "aarch64-linux";
+  system.stateVersion = "26.05";
 
+  # Enable best swap space we can do
   zramSwap = {
     enable = true;
     algorithm = "zstd";
   };
 
-  image.fileName = imageName;
   sdImage = {
     extraFirmwareConfig = {
       # Give up VRAM for more Free System Memory
@@ -38,13 +38,14 @@
   };
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_rpi02w;
+    # Networking does not work properly without this https://github.com/raspberrypi/bookworm-feedback/issues/279
+    extraModprobeConfig = ''
+      options brcmfmac roamoff=1
+      options brcmfmac feature_disable=0x82000
+      options brcmfmac feature_disable=0x2000
+    '';
 
-    initrd.availableKernelModules = [
-      "xhci_pci"
-      "usbhid"
-      "usb_storage"
-    ];
+    kernelPackages = pkgs.linuxPackages_rpi02w;
 
     loader = {
       grub.enable = false;
