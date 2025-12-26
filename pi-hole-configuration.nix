@@ -7,6 +7,7 @@
 }:
 let
   systemSecrets = secrets."${systemName}";
+  networkSecrets = secrets.networks.${systemSecrets.network};
 in
 {
   services.openssh.enable = true; # Enable this otherwise you can't sign in right away
@@ -24,19 +25,19 @@ in
   networking = {
     hostName = "${systemName}";
 
-    defaultGateway = systemSecrets.network.defaultGateway;
-    nameservers = [ systemSecrets.network.defaultGateway ];
+    defaultGateway = networkSecrets.defaultGateway;
+    nameservers = [ networkSecrets.defaultGateway ];
     interfaces."wlan0".ipv4.addresses = [
       {
-        address = systemSecrets.network.ipAddress;
-        prefixLength = systemSecrets.network.ipPrefixLength;
+        address = systemSecrets.ipAddress;
+        prefixLength = networkSecrets.ipPrefixLength;
       }
     ];
     wireless = {
       interfaces = [ "wlan0" ];
       enable = true;
       networks = {
-        "${systemSecrets.network.ssid}".psk = systemSecrets.network.password;
+        "${networkSecrets.ssid}".psk = networkSecrets.password;
       };
     };
   };
@@ -114,7 +115,7 @@ in
               "ephemeral": false,
               "preauthorized": false,
               "tags": [
-                "tag:${systemSecrets.tailscale.locationTag}",
+                "tag:${networkSecrets.tailscale.locationTag}",
                 "tag:pi-hole"
               ]
             }
@@ -135,7 +136,7 @@ in
     useRoutingFeatures = "server";
     extraSetFlags = [
       "--advertise-exit-node"
-      "--advertise-routes=${lib.concatStringsSep "," systemSecrets.tailscale.accessibleSubnets}"
+      "--advertise-routes=${lib.concatStringsSep "," networkSecrets.tailscale.accessibleSubnets}"
     ];
     extraUpFlags = extraSetFlags; # Without this, you can't use up after set runs
   };
@@ -162,7 +163,7 @@ in
           "149.112.112.112"
           "2620:fe::fe"
           "2620:fe::9"
-          systemSecrets.network.defaultGateway
+          networkSecrets.defaultGateway
         ];
       };
     };
