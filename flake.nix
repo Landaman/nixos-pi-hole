@@ -21,7 +21,7 @@
             hardware = nixos-hardware;
           };
           modules = [
-            ./pi/hardware-pi02.nix
+            ./hardware/pi/hardware-pi02.nix
             ./pi-hole-configuration.nix
           ];
         };
